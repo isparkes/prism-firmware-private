@@ -6,18 +6,18 @@
 #include "SPIFFS.h"
 #include "LEDManager.h"
 
-#define DIGIT_COUNT 6
+#define DIGIT_COUNT            6
+
+#define COUNTS_PER_DIGIT       20
+#define COUNTS_PER_DIGIT_DIM   8
 
 extern boolean led1State;
 extern boolean led2State;
 extern boolean ledLState;
 extern boolean ledRState;
 extern boolean blankTubes;
-extern uint32_t bufferValCurr1, bufferValCurr2, bufferValPrev1, bufferValPrev2;
-extern byte bufferSwitchTime, bufferOffTime;
-
-#define COUNTS_PER_DIGIT       20
-#define COUNTS_PER_DIGIT_DIM   8
+extern volatile uint32_t valueBufferCurr1[COUNTS_PER_DIGIT];
+extern volatile uint32_t valueBufferCurr2[COUNTS_PER_DIGIT];
 
 #define DIM_VALUE             DIGIT_DISPLAY_COUNT / 5;
 
@@ -82,10 +82,6 @@ typedef struct {
     byte displayType[DIGIT_COUNT];
     byte fadeState[DIGIT_COUNT];
     boolean digitBlanked[DIGIT_COUNT];
-    uint32_t valueBufferCurr1, valueBufferCurr2;
-    uint32_t valueBufferPrev1, valueBufferPrev2;
-    byte switchTime;
-    byte offTime;
 } digit_buffer_t;
 
 typedef struct {

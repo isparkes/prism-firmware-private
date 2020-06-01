@@ -47,6 +47,9 @@ class LEDManager
     // recalculate internal values based on the LDR reading
     void setLDRValue(unsigned int ldrValue);
 
+    // recalculate internal values based on the LDR reading
+    void setLDRRange(unsigned int ldrRange);
+
     // recalculate internal values based on the pulsing factor
     void setPulseValue(unsigned int secsDelta);
 
@@ -66,6 +69,7 @@ class LEDManager
     float _backlightDim = 1.0;
     float _underlightDim = 1.0;
     float _ldrDimFactor = 1.0;
+    float _ldrRange = 100.0;
     float _pwmFactor = 1.0;
     boolean _blanked = false;
     byte _ledMode = BACKLIGHT_DEFAULT;

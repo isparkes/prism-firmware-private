@@ -35,7 +35,6 @@ void OutputManager::setUp() {
   pinMode(BLANKPin, OUTPUT);  
   digitalWrite(BLANKPin, HIGH);
 
-  //analogWriteFreq(PWM_FREQUENCY);
   setLDRValue(0);
   setBlankingPin();
 }
@@ -212,78 +211,65 @@ void OutputManager::setDigitBuffers(byte digit, byte value, byte prevValue, byte
     }
   }
 
-  switch (digit) {
-    case 3: {
-        _digit_buffer.valueBufferCurr1 = _digit_buffer.valueBufferCurr1 & 0x3ffffc00;
-        _digit_buffer.valueBufferPrev1 = _digit_buffer.valueBufferPrev1 & 0x3ffffc00;
-        if (!blanked) {
-          _digit_buffer.valueBufferPrev1 = _digit_buffer.valueBufferPrev1 | DECODE_DIGIT[prevValue%10];
-          _digit_buffer.valueBufferCurr1 = _digit_buffer.valueBufferCurr1 | DECODE_DIGIT[value%10];
-        }
-        break;
+  // calculate the new column
+  uint32_t newVals[COUNTS_PER_DIGIT];
+  uint32_t currColVal = 0;
+  for (int idx = 0 ; idx < COUNTS_PER_DIGIT ; idx++) {
+    if (!blanked) {
+      if (idx == 0) {
+        currColVal = DECODE_DIGIT[value%10];
+      } else if (idx == switchTime) {
+        currColVal = DECODE_DIGIT[prevValue%10];
+      } else if (idx == dimFactor) {
+        currColVal = 0;
+      }
     }
-    case 4: {
-        _digit_buffer.valueBufferCurr1 = _digit_buffer.valueBufferCurr1 & 0x3ff003ff;
-        _digit_buffer.valueBufferPrev1 = _digit_buffer.valueBufferPrev1 & 0x3ff003ff;
-        if (!blanked) {
-          _digit_buffer.valueBufferCurr1 = _digit_buffer.valueBufferCurr1 | DECODE_DIGIT[value%10] << 10;
-          _digit_buffer.valueBufferPrev1 = _digit_buffer.valueBufferPrev1 | DECODE_DIGIT[prevValue%10] << 10;
-        }
-        break;
+    newVals[idx] = currColVal;
+  }
+  
+  // merge in, shifting as necessary
+  for (int idx = 0 ; idx < COUNTS_PER_DIGIT ; idx++) {
+    switch (digit) {
+      case 3: {
+          valueBufferCurr1[idx] = valueBufferCurr1[idx] & 0x3ffffc00 | newVals[idx];
+          break;
+      }
+      case 4: {
+          valueBufferCurr1[idx] = valueBufferCurr1[idx] & 0x3ff003ff | newVals[idx] << 10;
+          break;
+      }
+      case 5: {
+          valueBufferCurr1[idx] = valueBufferCurr1[idx] & 0xc00fffff | newVals[idx] << 20;
+          break;
+      }
+      case 0: {
+          valueBufferCurr2[idx] = valueBufferCurr2[idx] & 0x3ffffc00 | newVals[idx];
+          break;
+      }
+      case 1: {
+          valueBufferCurr2[idx] = valueBufferCurr2[idx] & 0x3ff003ff | newVals[idx] << 10;
+          break;
+      }
+      case 2: {
+          valueBufferCurr2[idx] = valueBufferCurr2[idx] & 0xc00fffff | newVals[idx] << 20;
+          break;
+      }
     }
-    case 5: {
-        _digit_buffer.valueBufferCurr1 = _digit_buffer.valueBufferCurr1 & 0xc00fffff;
-        _digit_buffer.valueBufferPrev1 = _digit_buffer.valueBufferPrev1 & 0xc00fffff;
-        if (!blanked) {
-          _digit_buffer.valueBufferCurr1 = _digit_buffer.valueBufferCurr1 | DECODE_DIGIT[value%10] << 20;
-          _digit_buffer.valueBufferPrev1 = _digit_buffer.valueBufferPrev1 | DECODE_DIGIT[prevValue%10] << 20;
-        }
-        break;
-    }
-    case 0: {
-        _digit_buffer.valueBufferCurr2 = _digit_buffer.valueBufferCurr2 & 0x3ffffc00;
-        _digit_buffer.valueBufferPrev2 = _digit_buffer.valueBufferPrev2 & 0x3ffffc00;
-        if (!blanked) {
-          _digit_buffer.valueBufferPrev2 = _digit_buffer.valueBufferPrev2 | DECODE_DIGIT[prevValue%10];
-          _digit_buffer.valueBufferCurr2 = _digit_buffer.valueBufferCurr2 | DECODE_DIGIT[value%10];
-        }
-        break;
-    }
-    case 1: {
-        _digit_buffer.valueBufferCurr2 = _digit_buffer.valueBufferCurr2 & 0x3ff003ff;
-        _digit_buffer.valueBufferPrev2 = _digit_buffer.valueBufferPrev2 & 0x3ff003ff;
-        if (!blanked) {
-          _digit_buffer.valueBufferCurr2 = _digit_buffer.valueBufferCurr2 | DECODE_DIGIT[value%10] << 10;
-          _digit_buffer.valueBufferPrev2 = _digit_buffer.valueBufferPrev2 | DECODE_DIGIT[prevValue%10] << 10;
-        }
-        break;
-    }
-    case 2: {
-        _digit_buffer.valueBufferCurr2 = _digit_buffer.valueBufferCurr2 & 0xc00fffff;
-        _digit_buffer.valueBufferPrev2 = _digit_buffer.valueBufferPrev2 & 0xc00fffff;
-        if (!blanked) {
-          _digit_buffer.valueBufferCurr2 = _digit_buffer.valueBufferCurr2 | DECODE_DIGIT[value%10] << 20;
-          _digit_buffer.valueBufferPrev2 = _digit_buffer.valueBufferPrev2 | DECODE_DIGIT[prevValue%10] << 20;
-        }
-        break;
+
+    // merge in the LEDs
+    if (cc->separatorDimFactor == 2) {
+      if (idx < dimFactor/4) {
+        valueBufferCurr1[idx] |= DECODE_LED[led1State];
+        valueBufferCurr2[idx] |= DECODE_LED[led2State];
+      }
+    } else {
+      if (idx < dimFactor) {
+        valueBufferCurr1[idx] |= DECODE_LED[led1State];
+        valueBufferCurr2[idx] |= DECODE_LED[led2State];
+      }
     }
   }
   
-  _digit_buffer.switchTime = switchTime;
-  _digit_buffer.offTime = dimFactor;
-    
-  // fill in the neon separators
-  _digit_buffer.valueBufferCurr1 |= DECODE_LED[led1State];
-  _digit_buffer.valueBufferCurr2 |= DECODE_LED[led2State];
-  _digit_buffer.valueBufferPrev1 |= DECODE_LED[led1State];
-  _digit_buffer.valueBufferPrev2 |= DECODE_LED[led2State];
-
-  bufferValCurr1 = _digit_buffer.valueBufferCurr1;
-  bufferValCurr2 = _digit_buffer.valueBufferCurr2;
-  bufferValPrev1 = _digit_buffer.valueBufferPrev1;
-  bufferValPrev2 = _digit_buffer.valueBufferPrev2;
-  bufferSwitchTime = _digit_buffer.switchTime;
-  bufferOffTime = _digit_buffer.offTime;
 }
 
 // ************************************************************

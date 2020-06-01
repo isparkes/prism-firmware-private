@@ -66,19 +66,14 @@
 //*                              ISR Display Direct Drive                          *
 //**********************************************************************************
 //**********************************************************************************
-#define INT_MUX_COUNTS         2000
+#define INT_MUX_COUNTS         3000
 #define COUNTS_PER_DIGIT       20
 #define COUNTS_PER_DIGIT_DIM   8
 
 volatile byte phaseStep = 0;
-volatile uint32_t outValCurr1, outValCurr2;
-volatile uint32_t outValPrev1, outValPrev2;
-volatile byte outSwitchTime;
-volatile byte outOffTime;
-uint32_t bufferValCurr1, bufferValCurr2;
-uint32_t bufferValPrev1, bufferValPrev2;
-byte bufferSwitchTime;
-byte bufferOffTime;
+//volatile uint32_t outValCurr1[COUNTS_PER_DIGIT], outValCurr2[COUNTS_PER_DIGIT];
+volatile uint32_t valueBufferCurr1[COUNTS_PER_DIGIT], valueBufferCurr2[COUNTS_PER_DIGIT];
+volatile uint32_t lastOut1, lastOut2;
 
 // ************************************************************
 // Interrupt routine for scheduled interrupts
@@ -93,22 +88,13 @@ ICACHE_RAM_ATTR void displayUpdate() {
   phaseStep++;
   if (phaseStep >= COUNTS_PER_DIGIT) {
     phaseStep = 0;
-    outValCurr1 = bufferValCurr1;
-    outValCurr2 = bufferValCurr2;
-    outValPrev1 = bufferValPrev1;
-    outValPrev2 = bufferValPrev2;
-    outOffTime = bufferOffTime;
-    outSwitchTime = bufferSwitchTime;
-    shiftOut32x2(outValCurr1, outValCurr2);
   }
 
-  if (phaseStep == outOffTime) {
-    shiftOut32x2(0, 0);
+  if (valueBufferCurr1[phaseStep] != lastOut1 || valueBufferCurr2[phaseStep] != lastOut2) {
+    lastOut1 = valueBufferCurr1[phaseStep];
+    lastOut2 = valueBufferCurr2[phaseStep];
+    shiftOut32x2(lastOut1, lastOut2);
   }
-  
-//  if (phaseStep == outSwitchTime) {
-//    shiftOut32x2(outValPrev1, outValPrev2);
-//  }
   
   timer1_write(INT_MUX_COUNTS);
 }
@@ -172,6 +158,7 @@ void setup()
   spiffs.setDebugOutput(debugVal);
 
   ledManager.setUp();
+  ledManager.setLDRRange(COUNTS_PER_DIGIT);
 
   // ----------------------------------------------------------------------------
 
@@ -192,28 +179,28 @@ void setup()
 
   // ----------------------------------------------------------------------------
 
-  debugMsg("Digit test");
-  uint32_t test = 1;
-  bufferValCurr1 = 0;
-  bufferValCurr2 = 0;
-
-  // No switching or dimming
-  bufferSwitchTime = 21;
-  bufferOffTime = 21;
-  
-  while (test != 0) {
-    bufferValCurr2 = test;
-    // debugManager.debugMsg("Set test to: " + String(test));
-    test = test << 1;
-    delay(100);
-  }
-  test = 1;
-  while (test != 0) {
-    bufferValCurr1 = test;
-    // debugManager.debugMsg("Set test to: " + String(test));
-    test = test << 1;
-    delay(100);
-  }
+//  debugMsg("Digit test");
+//  uint32_t test = 1;
+//  bufferValCurr1 = 0;
+//  bufferValCurr2 = 0;
+//
+//  // No switching or dimming
+//  bufferSwitchTime = 21;
+//  bufferOffTime = 21;
+//  
+//  while (test != 0) {
+//    bufferValCurr2 = test;
+//    // debugManager.debugMsg("Set test to: " + String(test));
+//    test = test << 1;
+//    delay(100);
+//  }
+//  test = 1;
+//  while (test != 0) {
+//    bufferValCurr1 = test;
+//    // debugManager.debugMsg("Set test to: " + String(test));
+//    test = test << 1;
+//    delay(100);
+//  }
   
   setDiagnosticLED(DIAGS_START, STATUS_GREEN);
   OutputManager::Instance().loadNumberArrayPOSTMessage(DIAGS_START);
@@ -628,6 +615,11 @@ void performOncePerSecondProcessing() {
 // ************************************************************
 void performOncePerMinuteProcessing() {
   debugManager.debugMsg("---> OncePerMinuteProcessing");
+
+//  for (int idx = 0 ; idx < COUNTS_PER_DIGIT ; idx++) {
+//    debugManager.debugMsg("valueBufferCurr1[" + String(idx) + "]: " + String (valueBufferCurr1[idx]));
+//    debugManager.debugMsg("valueBufferCurr2[" + String(idx) + "]: " + String (valueBufferCurr2[idx]));
+//  }
 
   debugManager.debugMsg("nu: " + String(ntpAsync.getNextUpdate(nowMillis)));
 

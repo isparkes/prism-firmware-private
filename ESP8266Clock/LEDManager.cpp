@@ -24,8 +24,16 @@ void LEDManager::setLDRValue(unsigned int ldrValue)
 {
   if (cc->useBLDim) {
     // calculate the PWM factor, goes between current_config.minDim% and 100%
-    _ldrDimFactor = (float) (1023 - ldrValue) / (float) 1023.0;
+    _ldrDimFactor = (float) ldrValue / _ldrRange;
   }
+}
+
+// ************************************************************
+// Set the LDR dimming value
+// ************************************************************
+void LEDManager::setLDRRange(unsigned int ldrRange)
+{
+    _ldrRange = (float) ldrRange;
 }
 
 // ************************************************************

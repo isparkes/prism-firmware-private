@@ -66,14 +66,14 @@ boolean SPIFFS_CLOCK::getConfigFromSpiffs(spiffs_config_t* spiffs_config) {
           spiffs_config->dayBlanking = json["dayBlanking"];
           debugMsg("Loaded dayBlanking: " + String(spiffs_config->dayBlanking));
 
-          spiffs_config->blankLeading = json["fade"].as<bool>();
-          debugMsg("Loaded lead fade: " + String(spiffs_config->fade));
+          spiffs_config->fade = json["fade"].as<bool>();
+          debugMsg("Loaded fade: " + String(spiffs_config->fade));
 
           spiffs_config->fadeSteps = json["fadeSteps"];
           debugMsg("Loaded fadeSteps: " + String(spiffs_config->fadeSteps));
 
           spiffs_config->scrollback = json["scrollback"].as<bool>();
-          debugMsg("Loaded lead scrollback: " + String(spiffs_config->scrollback));
+          debugMsg("Loaded scrollback: " + String(spiffs_config->scrollback));
 
           spiffs_config->scrollSteps = json["scrollSteps"];
           debugMsg("Loaded scrollSteps: " + String(spiffs_config->scrollSteps));
